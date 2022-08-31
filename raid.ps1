@@ -1,6 +1,32 @@
 
+
+param(
+     [Parameter()]
+     [string]$vss,
+
+     [Parameter()]
+     [string]$utils,
+
+     [Parameter()]
+     [string]$path
+ )
+
+if ($vss) {
+    $shadowcopy_name = "shadowcopy"
+    $root = $env:systemdrive+"\"+$shadowcopy_name
+} else {
+    $root = $env:systemdrive
+}
+
+if ($data_types) {
+} else {
+}
+
+
 $datetime = Get-Date -Format "MM_dd_yyyy_HH_mm"
 $evidence_path = "Evidence_triage_$env:computername"+"$datetime"
+$shadowcopy_name = "shadowcopy"
+$shadow_root = $env:systemdrive+"\"+$shadowcopy_name
 
 function Create-Evidence-Dir
 {
@@ -367,9 +393,9 @@ function Gather-Amcache-Files
         try{
             New-Item -Path ".\" -Name "$evidence_path\amcache" -ItemType "directory" | Out-Null
         }catch{}
-        Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Amcache Files"
     }
@@ -382,7 +408,7 @@ function Gather-Activities-Cache
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_activity_cache" -ItemType "directory" | Out-Null
         }catch{}
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\ConnectedDevicesPlatform\*\ActivitiesCache.db" -Destination ".\$evidence_path\win_activity_cache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Users\*\AppData\Local\ConnectedDevicesPlatform\*\ActivitiesCache.db" -Destination ".\$evidence_path\win_activity_cache" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Activity Cache"
     }
@@ -395,8 +421,8 @@ function Gather-BITS-DB
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_bits" -ItemType "directory" | Out-Null
         }catch{}
-        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing BITS Databases"
     }
@@ -409,8 +435,8 @@ function Gather-Cortana-DB
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_cortana" -ItemType "directory" | Out-Null
         }catch{}
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\AppData\Indexed DB\IndexedDB.edb" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\LocalState\ESEDatabase_CortanaCoreInstance\CortanaCoreDb.dat" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\AppData\Indexed DB\IndexedDB.edb" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\LocalState\ESEDatabase_CortanaCoreInstance\CortanaCoreDb.dat" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Cortana Databases"
     }
@@ -420,23 +446,29 @@ function Gather-WER-Data
 {
     Write-Host "Capturing: Windows Error Reporting Data"
     try{
-        try{
-            New-Item -Path ".\" -Name "$evidence_path\win_wer" -ItemType "directory" | Out-Null
-        }catch{}
-        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\Minidump\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\ServiceProfiles\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\ServiceProfiles\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\System32\config\systemprofile\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\System32\config\systemprofile\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-    }catch{
-        Write-Warning "Error Capturing Windows Error Reporting Data"
+        New-Item -Path ".\" -Name "$evidence_path\win_wer" -ItemType "directory" | Out-Null
+    }catch{}
+    try
+    {
+        Copy-Item -Path "$root\ProgramData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    } catch {
+        Write-Warning "Error Copying Data from $env:SystemDrive\ProgramData\Microsoft\Windows\WER"
     }
+    try
+    {
+        Copy-Item -Path "$root\Windows\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    } catch {
+        Write-Warning "Error Copying Data from $env:SystemRoot"
+    }
+    Copy-Item -Path "$root\Windows\Minidump\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\ServiceProfiles\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\ServiceProfiles\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\System32\config\systemprofile\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\System32\config\systemprofile\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Users\*\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Users\*\AppData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Users\*\AppData\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
 
 }
 
@@ -447,19 +479,83 @@ function Gather-Crypnet-Data
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_cryptnet_caches" -ItemType "directory" | Out-Null
         }catch{}
-        Copy-Item -Path "$env:SystemRoot\System32\config\systemprofile\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemRoot\SysWOW64\config\systemprofile\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Windows\System32\config\systemprofile\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Windows\SysWOW64\config\systemprofile\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$root\Users\*\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Windows Cryptnet URL Caches"
     }
 
 }
 
+
+# Below functions modified From JJ Fulmer awesome answer at https://stackoverflow.com/questions/14207788/accessing-volume-shadow-copy-vss-snapshots-from-powershell
+function New-ShadowLink {
+    [CmdletBinding()]
+    param (
+        $linkPath="$($ENV:SystemDrive)\$shadowcopy_name"
+    )
+
+    begin {
+        Write-Verbose "Creating a snapshot of $($ENV:SystemDrive)\"
+        $class=[WMICLASS]"root\cimv2:win32_shadowcopy";
+        $result = $class.create("$ENV:SystemDrive\", "ClientAccessible");
+        Write-Verbose "Getting the full target path for a symlink to the shadow snapshot"
+        $global:shadow = Get-CimInstance -ClassName Win32_ShadowCopy | Where-Object ID -eq $result.ShadowID
+        $target = "$($shadow.DeviceObject)\";
+        $global:shadowid = $shadow.ID
+    }
+
+    process {
+        Write-Verbose "Creating SymLink to shadowcopy at $linkPath"
+        Invoke-Expression -Command "cmd /c mklink /d '$linkPath' '$target'";
+    }
+
+    end {
+        Write-Verbose "Created link to shadowcopy snapshot of $($ENV:SystemDrive)\ at $linkPath";
+        Write-Verbose "Returning shadowcopy snapshot object"
+        Write-Host "Shadow Copy ID: $shadowid"
+        return $shadow;
+    }
+}
+
+function Remove-ShadowLink {
+    [CmdletBinding()]
+    param (
+        $shadow,
+        $linkPath="$($ENV:SystemDrive)\$shadowcopy_name"
+    )
+    begin {
+        Write-verbose "Removing shadow copy link at $linkPath"
+    }
+
+    process {
+        Write-Verbose "Deleting the shadowcopy snapshot"
+        Write-Host "Executing: vssadmin delete shadows /shadow=$shadowid /quiet"
+        vssadmin delete shadows /shadow=$shadowid /quiet > "$evidence_path\vss_output.txt"
+        #$shadow.Delete();
+        Write-Verbose "Deleting the now empty folder"
+        Try {
+            Remove-Item -Force -Recurse $linkPath -ErrorAction Stop;
+        }
+        catch {
+            Invoke-Expression -Command "cmd /c rmdir /S /Q '$linkPath'";
+        }
+    }
+
+    end {
+        Write-Verbose "Shadow link and snapshot have been removed";
+        return;
+    }
+}
+
 function Main
 {
     Logo
     Create-Evidence-Dir
+    if ($vss) {
+        $shadow = New-ShadowLink -Verbose
+    } else {}
     Gather-EventLogs
     Gather-PowerShell-History
     Gather-TCPConnections
@@ -489,6 +585,9 @@ function Main
     Gather-Crypnet-Data
     #Gather-SuspiciousFiles
     #Gather-USN
+    if ($vss) {
+        Remove-ShadowLink -shadow $shadow -Verbose;
+    } else {}
 }
 
 function Logo {
