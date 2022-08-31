@@ -299,7 +299,7 @@ function Gather-Prefetch-Files
         try{
             New-Item -Path ".\" -Name "$evidence_path\prefetch" -ItemType "directory" | Out-Null
         }catch{}
-    Copy-Item -Path "$env:SystemRoot\prefetch\*" -Destination ".\$evidence_path\prefetch" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\prefetch\*" -Destination ".\$evidence_path\prefetch" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Prefetch Files"
     }
@@ -336,9 +336,9 @@ function Gather-Amcache-Files
         try{
             New-Item -Path ".\" -Name "$evidence_path\amcache" -ItemType "directory" | Out-Null
         }catch{}
-    Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-    Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-    Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Amcache Files"
     }
@@ -351,7 +351,7 @@ function Gather-Activities-Cache
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_activity_cache" -ItemType "directory" | Out-Null
         }catch{}
-    Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\ConnectedDevicesPlatform\*\ActivitiesCache.db" -Destination ".\$evidence_path\win_activity_cache" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\ConnectedDevicesPlatform\*\ActivitiesCache.db" -Destination ".\$evidence_path\win_activity_cache" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Activity Cache"
     }
@@ -364,8 +364,8 @@ function Gather-BITS-DB
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_bits" -ItemType "directory" | Out-Null
         }catch{}
-    Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
-    Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing BITS Databases"
     }
@@ -378,11 +378,51 @@ function Gather-Cortana-DB
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_cortana" -ItemType "directory" | Out-Null
         }catch{}
-    Copy-Item -Path "$env:SystemRoot\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\AppData\Indexed DB\IndexedDB.edb" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
-    Copy-Item -Path "$env:SystemRoot\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\LocalState\ESEDatabase_CortanaCoreInstance\CortanaCoreDb.dat" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\AppData\Indexed DB\IndexedDB.edb" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\LocalState\ESEDatabase_CortanaCoreInstance\CortanaCoreDb.dat" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Cortana Databases"
     }
+}
+
+function Gather-WER-Data
+{
+    Write-Host "Capturing: Windows Error Reporting Data"
+    try{
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\win_wer" -ItemType "directory" | Out-Null
+        }catch{}
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\Minidump\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\ServiceProfiles\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\ServiceProfiles\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\System32\config\systemprofile\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\System32\config\systemprofile\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Windows Error Reporting Data"
+    }
+
+}
+
+function Gather-Crypnet-Data
+{
+    Write-Host "Capturing: Windows Cryptnet URL Caches"
+    try{
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\win_cryptnet_caches" -ItemType "directory" | Out-Null
+        }catch{}
+        Copy-Item -Path "$env:SystemRoot\System32\config\systemprofile\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\SysWOW64\config\systemprofile\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Windows Cryptnet URL Caches"
+    }
+
 }
 
 function Main
@@ -414,6 +454,8 @@ function Main
     Gather-Activities-Cache
     Gather-BITS-DB
     Gather-Cortana-DB
+    Gather-WER-Data
+    Gather-Crypnet-Data
     #Gather-SuspiciousFiles
     #Gather-USN
 }
