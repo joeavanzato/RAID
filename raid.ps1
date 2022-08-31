@@ -1,7 +1,8 @@
 
 
 Write-Host "RAID: Rapid Acquisition of Interesting Data"
-$evidence_path = "Evidence_triage_$env:computername"
+$datetime = Get-Date -Format "MM_dd_yyyy_HH_mm"
+$evidence_path = "Evidence_triage_$env:computername"+"$datetime"
 
 function Create-Evidence-Dir
 {
@@ -9,7 +10,7 @@ function Create-Evidence-Dir
         Write-Host "Creating Evidence Directory: $evidence_path"
         if (Test-Path -Path "$evidence_path") {
         } else {
-            New-Item -Path ".\" -Name "$evidence_path" -ItemType "directory"
+            New-Item -Path ".\" -Name "$evidence_path" -ItemType "directory"  | Out-Null
         }
         }
     catch{}
@@ -19,7 +20,7 @@ function Gather-TCPConnections
 {
     try{
         Write-Host "Capturing: Network Connections"
-        Get-NetTcpConnection | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\network_connections.csv
+        Get-NetTcpConnection -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\network_connections.csv
     }catch{}
 }
 
@@ -27,7 +28,7 @@ function Gather-Services
 {
     try{
         Write-Host "Capturing: Installed Services"
-        Get-WmiObject win32_service | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\windows_services.csv
+        Get-WmiObject win32_service -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\windows_services.csv
     }catch{}
 }
 
@@ -35,7 +36,7 @@ function Gather-Processes
 {
     try{
         Write-Host "Capturing: Running Processes"
-        Get-CimInstance Win32_Process | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\running_processes.csv
+        Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\running_processes.csv
     }catch{}
 }
 
@@ -43,7 +44,7 @@ function Gather-DNS
 {
     try{
         Write-Host "Capturing: DNS Cache"
-        Get-DnsClientCache | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\dns_cache.csv
+        Get-DnsClientCache -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\dns_cache.csv
     }catch{}
 }
 
@@ -51,7 +52,7 @@ function Gather-SMB
 {
     try{
         Write-Host "Capturing: SMB Shares"
-        Get-SmbShare | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\smb_shares.csv
+        Get-SmbShare -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\smb_shares.csv
     }catch{}
 }
 
@@ -59,7 +60,7 @@ function Gather-Tasks
 {
     try{
         Write-Host "Capturing: Scheduled Tasks"
-        Get-ScheduledTask | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\scheduled_tasks.csv
+        Get-ScheduledTask -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\scheduled_tasks.csv
     }catch{}
 }
 
@@ -67,7 +68,7 @@ function Gather-Defender-Detections
 {
     try{
         Write-Host "Capturing: Defender Detections"
-        Get-MpThreatDetection | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\defender_threats.csv
+        Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\defender_threats.csv
     }catch{}
 }
 
@@ -76,10 +77,12 @@ function Gather-EventLogs
     try{
         Write-Host "Capturing: Windows Event Logs"
         try{
-            New-Item -Path ".\" -Name "$evidence_path\eventlogs" -ItemType "directory"
+            New-Item -Path ".\" -Name "$evidence_path\eventlogs" -ItemType "directory" | Out-Null
         }catch{}
-    Copy-Item -Path "C:\Windows\System32\winevt\logs\*" -Destination ".\$evidence_path\eventlogs" -Recurse
-    }catch{}
+    Copy-Item -Path "$env:SystemRoot\System32\winevt\logs\*" -Destination ".\$evidence_path\eventlogs" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Event Logs"
+    }
 }
 
 function Gather-NetConfig
@@ -141,7 +144,7 @@ function Gather-FirewallRules
 {
     try {
     Write-Host "Capturing: Firewall Rules"
-    Get-NetFirewallRule | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\firewall_rules.csv
+    Get-NetFirewallRule -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\firewall_rules.csv
     } catch{}
 }
 
@@ -149,44 +152,60 @@ function Gather-ARP
 {
     try {
         Write-Host "Capturing: ARP Cache"
-        Get-NetNeighbor | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\arp_cache.csv
+        Get-NetNeighbor -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\arp_cache.csv
     } catch{}
 }
 
 function Gather-NetCommands
 {
-
-    try
-    {
-        Write-Host "Capturing: NET Data"
-        "NET SESSION" >> $evidence_path\net_data.csv
-        net session >> $evidence_path\net_data.csv
-        "NET USE" >> $evidence_path\net_data.csv
-        net use >> $evidence_path\net_data.csv
-        "NET USER" >> $evidence_path\net_data.csv
-        net user >> $evidence_path\net_data.csv
-        "NET VIEW" >> $evidence_path\net_data.csv
-        net view >> $evidence_path\net_data.csv
-        "NET SHARE" >> $evidence_path\net_data.csv
-        net share >> $evidence_path\net_data.csv
-        "NET FILE" >> $evidence_path\net_data.csv
-        net file >> $evidence_path\net_data.csv
-        "NET ACCOUNTS" >> $evidence_path\net_data.csv
-        net accounts >> $evidence_path\net_data.csv
-        "NET LOCALGROUP" >> $evidence_path\net_data.csv
-        net localgroup >> $evidence_path\net_data.csv
+    Write-Host "Capturing: Net Commands"
+    try {
+        Write-Host "Capturing: Net Session"
+        Invoke-Expression "cmd.exe /c net session >> $evidence_path\net_session.txt" -ErrorAction SilentlyContinue | Out-Null
     }
-    catch
-    {
+    catch { }
+    try {
+        Write-Host "Capturing: Net Use"
+        Invoke-Expression "cmd.exe /c net use >> $evidence_path\net_use.txt" -ErrorAction SilentlyContinue | Out-Null
     }
-
+    catch { }
+    try {
+        Write-Host "Capturing: Net User"
+        Invoke-Expression "cmd.exe /c net user >> $evidence_path\net_user.txt" -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch { }
+    try {
+        Write-Host "Capturing: Net View"
+        Invoke-Expression "cmd.exe /c net view >> $evidence_path\net_view.txt" -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch { }
+    try {
+        Write-Host "Capturing: Net Share"
+        Invoke-Expression "cmd.exe /c net share >> $evidence_path\net_share.txt" -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch { }
+    try {
+        Write-Host "Capturing: Net File"
+        Invoke-Expression "cmd.exe /c net file >> $evidence_path\net_file.txt" -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch { }
+    try {
+        Write-Host "Capturing: Net Accounts"
+        Invoke-Expression "cmd.exe /c net accounts >> $evidence_path\net_accounts.txt" -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch { }
+    try {
+        Write-Host "Capturing: Net Localgroup"
+        Invoke-Expression "cmd.exe /c net localgroup >> $evidence_path\net_localgroup.txt" -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch { }
 }
 
 function Gather-SuspiciousFiles
 {
     try
     {
-        Write-Host "Capturing: Suspicious File Types [LONG]"
+        Write-Host "Capturing: Suspicious Files [LONG]"
         Get-ChildItem -Path C:\ -Include *.exe, *.bat, *.ps1, *.dll -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
 
     }
@@ -207,8 +226,92 @@ function Gather-USN
     }
 }
 
+function Gather-AV-Data
+# https://github.com/ForensicArtifacts/artifacts/blob/main/data/antivirus.yaml
+{
+
+    try {
+        if (Test-Path -Path ".\$evidence_path\quarantined_files") {
+        } else {
+            New-Item -Path ".\" -Name ".\$evidence_path\quarantined_files" -ItemType "directory" | Out-Null
+        }
+        }
+    catch {}
+    try {
+        Write-Host "Capturing: CrowdStrike Quarantined Files"
+        New-Item -Path ".\" -Name ".\$evidence_path\quarantined_files\crowdstrike" -ItemType "directory" | Out-Null
+        Copy-Item -Path "$env:SystemRoot\System32\drivers\CrowdStrike\Quarantine\*" -Destination ".\$evidence_path\quarantined_files\crowdstrike" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+    try {
+        Write-Host "Capturing: ESET AV Log Files"
+        New-Item -Path ".\" -Name ".\$evidence_path\quarantined_files\eset" -ItemType "directory" | Out-Null
+        Copy-Item -Path "$env:SystemDrive\ProgramData\ESET\ESET NOD32 Antivirus\Logs\*" -Destination ".\$evidence_path\quarantined_files\eset" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+    try {
+        Write-Host "Capturing: Microsoft Antimalware"
+        New-Item -Path ".\" -Name ".\$evidence_path\quarantined_files\microsoft" -ItemType "directory" | Out-Null
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Microsoft Antimalware\Quarantine\*" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+    try {
+        Write-Host "Capturing: Microsoft Defender"
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows Defender\Quarantine\*" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+    try {
+        Write-Host "Capturing: Microsoft AV Logs"
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows AntiMalware\Support\MPDetection-*.log" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows AntiMalware\Support\MPLog-*.log" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\*" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows Defender\Support\MPDetection-*.log" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows Defender\Support\MPLog-*.log" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\ServiceProfiles\LocalService\AppData\Local\Temp\MpCmdRun.log" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\Temp\MpCmdRun.log" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Windows Defender\Scans\History\Service\DetectionHistory\*\*-*-*-*" -Destination ".\$evidence_path\quarantined_files\microsoft" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+    try {
+        Write-Host "Capturing: Sophos AV Data"
+        New-Item -Path ".\" -Name ".\$evidence_path\quarantined_files\sophos" -ItemType "directory" | Out-Null
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Sophos\Sophos Anti-Virus\Logs\*" -Destination ".\$evidence_path\quarantined_files\sophos" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Sophos\Sophos Anti-Virus\INFECTED\*" -Destination ".\$evidence_path\quarantined_files\sophos" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+    try {
+        Write-Host "Capturing: Symantec AV Data"
+        New-Item -Path ".\" -Name ".\$evidence_path\quarantined_files\symantec" -ItemType "directory" | Out-Null
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Symantec\Symantec Endpoint Protection\*\Data\Logs\*.log" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Symantec\Symantec Endpoint Protection\*\Data\Logs\AV\*.log" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Symantec\Symantec Endpoint Protection\Logs\AV\*.log" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemRoot\Users\*\AppData\Local\Symantec\Symantec Endpoint Protection\Logs\*.log" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Symantec\Symantec Endpoint Protection\**5\*.vbn" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\ProgramData\Symantec\Symantec Endpoint Protection\Quarantine\*" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Symantec\Symantec Endpoint Protection\*\Data\Quarantine\*" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+        Copy-Item -Path "$env:SystemDrive\Symantec\Symantec Endpoint Protection\*\Data\CmnClnt\ccSubSDK\*" -Destination ".\$evidence_path\quarantined_files\symantec" -Recurse -ErrorAction SilentlyContinue
+    }
+    catch {}
+
+}
+
+function Gather-Prefetch-Files
+{
+    try{
+        Write-Host "Capturing: Prefetch Files"
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\prefetch" -ItemType "directory" | Out-Null
+        }catch{}
+    Copy-Item -Path "$env:SystemRoot\prefetch\*" -Destination ".\$evidence_path\prefetch" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Prefetch Files"
+    }
+}
+
+
 function Main
 {
+    Logo
     Create-Evidence-Dir
     Gather-EventLogs
     Gather-TCPConnections
@@ -227,8 +330,28 @@ function Main
     Gather-FirewallRules
     Gather-ARP
     Gather-NetCommands
-    Gather-SuspiciousFiles
-    Gather-USN
+    Gather-AV-Data
+    Gather-Prefetch-Files
+    #Gather-SuspiciousFiles
+    #Gather-USN
 }
+
+function Logo {
+    $logo = "
+                  ▄████████    ▄████████  ▄█  ████████▄
+                  ███    ███   ███    ███ ███  ███   ▀███
+                  ███    ███   ███    ███ ███▌ ███    ███
+                 ▄███▄▄▄▄██▀   ███    ███ ███▌ ███    ███
+                ▀▀███▀▀▀▀▀   ▀███████████ ███▌ ███    ███
+                ▀███████████   ███    ███ ███  ███    ███
+                  ███    ███   ███    ███ ███  ███   ▄███
+                  ███    ███   ███    █▀  █▀   ████████▀
+                  ███    ███
+            "
+    Write-Host $logo
+    Write-Host "Rapid Acquisition of Interesting Data"
+    Write-Host "github.com/joeavanzato/RAID"
+}
+
 
 Main
