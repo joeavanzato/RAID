@@ -206,8 +206,7 @@ function Gather-SuspiciousFiles
     try
     {
         Write-Host "Capturing: Suspicious Files [LONG]"
-        Get-ChildItem -Path C:\ -Include *.exe, *.bat, *.ps1, *.dll -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
-
+        Get-ChildItem -Path C:\temp,C:\windows\system32,C:\windows\temp,C:\Users -Include *.exe,*.bat,*.ps1,*.zip,*.gz,*.7z -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
     }
     catch
     {
@@ -308,12 +307,36 @@ function Gather-Prefetch-Files
     }
 }
 
+function Gather-PowerShell-History
+{
+    try{
+        Write-Host "Capturing: PowerShell History Files"
+        New-Item -Path ".\" -Name "$evidence_path\ps_history" -ItemType "directory" | Out-Null
+        Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Destination ".\$evidence_path\ps_history" -Recurse -ErrorAction SilentlyContinue
+    } catch{
+        Write-Warning "Error Capturing PS History Files"
+    }
+}
+
+function Gather-Installed-Software
+{
+    try{
+        $InstalledSoftware = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |  Select-Object DisplayName, DisplayVersion, Publisher, InstallDate
+        $InstalledSoftware += Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate
+        $InstalledSoftware | ?{ $_.DisplayName -ne $null } | sort-object -Property DisplayName -Unique | Export-Csv "$evidence_path\installed_software.csv" -Encoding UTF8
+    }
+     catch{
+        Write-Warning "Error Capturing Installed Software"
+    }
+}
+
 
 function Main
 {
     Logo
     Create-Evidence-Dir
     Gather-EventLogs
+    Gather-PowerShell-History
     Gather-TCPConnections
     Gather-Services
     Gather-Processes
@@ -332,6 +355,7 @@ function Main
     Gather-NetCommands
     Gather-AV-Data
     Gather-Prefetch-Files
+    Gather-Installed-Software
     #Gather-SuspiciousFiles
     #Gather-USN
 }
