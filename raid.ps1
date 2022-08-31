@@ -11,23 +11,29 @@ function Create-Evidence-Dir
             New-Item -Path ".\" -Name "$evidence_path" -ItemType "directory"  | Out-Null
         }
         }
-    catch{}
+    catch{
+        Write-Warning "Error Creating Evidence Directory!"
+    }
 }
 
 function Gather-TCPConnections
 {
     try{
-        Write-Host "Capturing: Network Connections"
+        Write-Host "Capturing: TCP Connections"
         Get-NetTcpConnection -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\network_connections.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing TCP Connections"
+    }
 }
 
 function Gather-Services
 {
     try{
-        Write-Host "Capturing: Installed Services"
+        Write-Host "Capturing: Windows Services"
         Get-WmiObject win32_service -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\windows_services.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Windows Services"
+    }
 }
 
 function Gather-Processes
@@ -35,7 +41,9 @@ function Gather-Processes
     try{
         Write-Host "Capturing: Running Processes"
         Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\running_processes.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Running Processes"
+    }
 }
 
 function Gather-DNS
@@ -43,7 +51,9 @@ function Gather-DNS
     try{
         Write-Host "Capturing: DNS Cache"
         Get-DnsClientCache -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\dns_cache.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing DNS Cache"
+    }
 }
 
 function Gather-SMB
@@ -51,23 +61,29 @@ function Gather-SMB
     try{
         Write-Host "Capturing: SMB Shares"
         Get-SmbShare -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\smb_shares.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing SMB Shares"
+    }
 }
 
 function Gather-Tasks
 {
     try{
-        Write-Host "Capturing: Scheduled Tasks"
+        Write-Host "Capturing: Windows Scheduled Tasks"
         Get-ScheduledTask -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\scheduled_tasks.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Windows Scheduled Tasks"
+    }
 }
 
 function Gather-Defender-Detections
 {
     try{
-        Write-Host "Capturing: Defender Detections"
+        Write-Host "Capturing: Windows Defender Detections"
         Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\defender_threats.csv
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Windows Defender Detections"
+    }
 }
 
 function Gather-EventLogs
@@ -79,7 +95,7 @@ function Gather-EventLogs
         }catch{}
     Copy-Item -Path "$env:SystemRoot\System32\winevt\logs\*" -Destination ".\$evidence_path\eventlogs" -Recurse -ErrorAction SilentlyContinue
     }catch{
-        Write-Warning "Error Capturing Event Logs"
+        Write-Warning "Error Capturing Windows Event Logs"
     }
 }
 
@@ -88,7 +104,9 @@ function Gather-NetConfig
     try{
         Write-Host "Capturing: Network Configuration"
         ipconfig /all > $evidence_path\ipconfig.txt
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Network Configuration"
+    }
 }
 
 function Gather-PatchInfo
@@ -96,20 +114,21 @@ function Gather-PatchInfo
     try{
         Write-Host "Capturing: Patch Information"
         wmic qfe list full > $evidence_path\patches.txt
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Patch Information"
+    }
 }
 
 function Gather-QData
 {
     try{
         Write-Host "Capturing: Remote Sessions/Processes"
-        "QWINSTA" > $evidence_path\remote_sessions.txt
-        qwinsta >> $evidence_path\remote_sessions.txt
-        "QUSER" >> $evidence_path\remote_sessions.txt
-        quser >> $evidence_path\remote_sessions.txt
-        "QPROCESS" >> $evidence_path\remote_sessions.txt
-        qprocess >> $evidence_path\remote_sessions.txt
-    }catch{}
+        qwinsta >> $evidence_path\qwinsta.txt
+        quser >> $evidence_path\quser.txt
+        qprocess >> $evidence_path\qprocess.txt
+    }catch{
+        Write-Warning "Error Capturing Remote Sessions/Processes"
+    }
 }
 
 function Gather-LocalAdmins
@@ -117,7 +136,9 @@ function Gather-LocalAdmins
     try{
         Write-Host "Capturing: Local Admins"
         net localgroup administrators > $evidence_path\local_admins.txt
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Local Admins"
+    }
 }
 
 function Gather-StartupItems
@@ -127,23 +148,29 @@ function Gather-StartupItems
         net start > $evidence_path\startup_items.txt
         "WMIC STARTUP ITEMS" >> $evidence_path\startup_items.txt
         wmic startup get * /format:list >> $evidence_path\startup_items.txt
-    }catch{}
+    }catch{
+        Write-Warning "Error Capturing Startup Items"
+    }
 }
 
 function Gather-SysInfo
 {
     try{
-    Write-Host "Capturing: System Information"
-    system info > $evidence_path\system_info.txt
-    }catch{}
+        Write-Host "Capturing: System Information"
+        systeminfo > $evidence_path\systeminfo.txt
+    }catch{
+        Write-Warning "Error Capturing System Information"
+    }
 }
 
 function Gather-FirewallRules
 {
     try {
-    Write-Host "Capturing: Firewall Rules"
-    Get-NetFirewallRule -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\firewall_rules.csv
-    } catch{}
+        Write-Host "Capturing: Firewall Rules"
+        Get-NetFirewallRule -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\firewall_rules.csv
+    } catch{
+        Write-Warning "Error Capturing Firewall Rules"
+    }
 }
 
 function Gather-ARP
@@ -151,7 +178,9 @@ function Gather-ARP
     try {
         Write-Host "Capturing: ARP Cache"
         Get-NetNeighbor -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\arp_cache.csv
-    } catch{}
+    } catch{
+        Write-Warning "Error Capturing ARP Cache"
+    }
 }
 
 function Gather-NetCommands
@@ -208,6 +237,7 @@ function Gather-SuspiciousFiles
     }
     catch
     {
+        Write-Warning "Error Capturing Suspicious Files"
     }
 }
 
@@ -220,6 +250,7 @@ function Gather-USN
     }
     catch
     {
+        Write-Warning "Error Capturing USN Journal"
     }
 }
 
