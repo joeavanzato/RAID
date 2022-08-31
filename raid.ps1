@@ -1,6 +1,4 @@
 
-
-Write-Host "RAID: Rapid Acquisition of Interesting Data"
 $datetime = Get-Date -Format "MM_dd_yyyy_HH_mm"
 $evidence_path = "Evidence_triage_$env:computername"+"$datetime"
 
@@ -206,7 +204,7 @@ function Gather-SuspiciousFiles
     try
     {
         Write-Host "Capturing: Suspicious Files [LONG]"
-        Get-ChildItem -Path C:\temp,C:\windows\system32,C:\windows\temp,C:\Users -Include *.exe,*.bat,*.ps1,*.zip,*.gz,*.7z -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
+        Get-ChildItem -Path C:\temp,C:\windows\system32,C:\windows\temp,C:\Users -Include *.htm,*.vbs,*.hta,*.chm,*.exe,*.bat,*.ps1,*.zip,*.gz,*.7z -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
     }
     catch
     {
@@ -226,8 +224,8 @@ function Gather-USN
 }
 
 function Gather-AV-Data
-# https://github.com/ForensicArtifacts/artifacts/blob/main/data/antivirus.yaml
 {
+    # https://github.com/ForensicArtifacts/artifacts/blob/main/data/antivirus.yaml
 
     try {
         if (Test-Path -Path ".\$evidence_path\quarantined_files") {
@@ -296,8 +294,8 @@ function Gather-AV-Data
 
 function Gather-Prefetch-Files
 {
+    Write-Host "Capturing: Prefetch Files"
     try{
-        Write-Host "Capturing: Prefetch Files"
         try{
             New-Item -Path ".\" -Name "$evidence_path\prefetch" -ItemType "directory" | Out-Null
         }catch{}
@@ -309,8 +307,8 @@ function Gather-Prefetch-Files
 
 function Gather-PowerShell-History
 {
+    Write-Host "Capturing: PowerShell History Files"
     try{
-        Write-Host "Capturing: PowerShell History Files"
         New-Item -Path ".\" -Name "$evidence_path\ps_history" -ItemType "directory" | Out-Null
         Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Destination ".\$evidence_path\ps_history" -Recurse -ErrorAction SilentlyContinue
     } catch{
@@ -320,16 +318,72 @@ function Gather-PowerShell-History
 
 function Gather-Installed-Software
 {
+    Write-Host "Capturing: Installed Software"
     try{
         $InstalledSoftware = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |  Select-Object DisplayName, DisplayVersion, Publisher, InstallDate
         $InstalledSoftware += Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate
-        $InstalledSoftware | ?{ $_.DisplayName -ne $null } | sort-object -Property DisplayName -Unique | Export-Csv "$evidence_path\installed_software.csv" -Encoding UTF8
+        $InstalledSoftware | ?{ $_.DisplayName -ne $null } | sort-object -Property DisplayName -Unique | Export-Csv "$evidence_path\installed_software.csv" -Encoding UTF8 -NoTypeInformation
     }
      catch{
         Write-Warning "Error Capturing Installed Software"
     }
 }
 
+function Gather-Amcache-Files
+{
+    Write-Host "Capturing: Amcache Hive Files"
+    try{
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\amcache" -ItemType "directory" | Out-Null
+        }catch{}
+    Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$env:SystemRoot\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Amcache Files"
+    }
+}
+
+function Gather-Activities-Cache
+{
+    Write-Host "Capturing: Activity Cache"
+    try{
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\win_activity_cache" -ItemType "directory" | Out-Null
+        }catch{}
+    Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Local\ConnectedDevicesPlatform\*\ActivitiesCache.db" -Destination ".\$evidence_path\win_activity_cache" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Activity Cache"
+    }
+}
+
+function Gather-BITS-DB
+{
+    Write-Host "Capturing: BITS Databases"
+    try{
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\win_bits" -ItemType "directory" | Out-Null
+        }catch{}
+    Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$env:SystemDrive\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing BITS Databases"
+    }
+}
+
+function Gather-Cortana-DB
+{
+    Write-Host "Capturing: Cortana Databases"
+    try{
+        try{
+            New-Item -Path ".\" -Name "$evidence_path\win_cortana" -ItemType "directory" | Out-Null
+        }catch{}
+    Copy-Item -Path "$env:SystemRoot\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\AppData\Indexed DB\IndexedDB.edb" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$env:SystemRoot\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\LocalState\ESEDatabase_CortanaCoreInstance\CortanaCoreDb.dat" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
+    }catch{
+        Write-Warning "Error Capturing Cortana Databases"
+    }
+}
 
 function Main
 {
@@ -356,6 +410,10 @@ function Main
     Gather-AV-Data
     Gather-Prefetch-Files
     Gather-Installed-Software
+    Gather-Amcache-Files
+    Gather-Activities-Cache
+    Gather-BITS-DB
+    Gather-Cortana-DB
     #Gather-SuspiciousFiles
     #Gather-USN
 }
@@ -373,8 +431,9 @@ function Logo {
                   ███    ███
             "
     Write-Host $logo
-    Write-Host "Rapid Acquisition of Interesting Data"
+    Write-Host "RAID: Rapid Acquisition of Interesting Data"
     Write-Host "github.com/joeavanzato/RAID"
+    Write-Host ""
 }
 
 
