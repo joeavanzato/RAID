@@ -509,7 +509,7 @@ function Gather-Crypnet-Data {
 }
 
 
-function Gather-BrowserData {
+function Gather-Browser-Data {
     Write-Host "Capturing: Browser Artifacts"
 
     New-Item -Path ".\" -Name "$evidence_path\browser_data" -ItemType "directory" | Out-Null
@@ -667,6 +667,19 @@ function Gather-BrowserData {
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\INetCache\IE\*\*" -target ".\$evidence_path\browser_data\ie"
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\INetCache\Low\*\*" -target ".\$evidence_path\browser_data\ie"
 
+    Write-Host "Capturing: IE Browser History"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Microsoft\Windows\IEDownloadHistory\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Feeds Cache\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\History\History.IE5\*\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\History\History.IE5\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\History\Low\History.IE5\*\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\History\Low\History.IE5\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\Temporary Internet Files\Content.IE5\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\Temporary Internet Files\Low\Content.IE5\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\WebCache\WebCacheV*.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\Local Settings\History\History.IE5\index.dat" -target ".\$evidence_path\browser_data\ie"
+
 
     #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
     #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
@@ -679,7 +692,52 @@ function Gather-BrowserData {
     #Copy-Item -Path "$root\Users\*\AppData\Local\Chromium\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
     #Copy-Item -Path "$root\Users\*\AppData\Local\Chromium\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
 
+}
 
+function Gather-WMI-Data
+{
+    Write-Host "Capturing: WMI Information"
+    New-Item -Path ".\" -Name "$evidence_path\win_wmi" -ItemType "directory" | Out-Null
+    Write-Host "Capturing: WMI Users"
+    Get-WmiObject -Query "select * FROM Win32_UserAccount" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_useraccounts.csv"
+    Write-Host "Capturing: WMI AV Products"
+    Get-WmiObject -Query "select * FROM AntivirusProduct" -Namespace root\SecurityCenter2 -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_av.csv"
+    Write-Host "Capturing: WMI PC Info"
+    Get-WmiObject -Query "SELECT * FROM Win32_ComputerSystemProduct" -Namespace root/SecurityCenter2 -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_pc_info.csv"
+    Write-Host "Capturing: WMI DNS Cache"
+    Get-WmiObject -Query "SELECT * from MSFT_DNSClientCache" -Namespace root\StandardCimv2 -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_dns_cache.csv"
+    Write-Host "Capturing: WMI Installed Drivers"
+    Get-WmiObject -Query "SELECT DisplayName, Description, InstallDate, Name, PathName, Status, State, ServiceType from Win32_SystemDriver"  -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_drivers.csv"
+    Write-Host "Capturing: WMI Active Script Event Consumers"
+    Get-WmiObject -Query "SELECT * FROM ActiveScriptEventConsumer" -Namespace root\subscription  -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_asec.csv"
+    Write-Host "Capturing: WMI Command Line Event Consumers"
+    Get-WmiObject -Query "SELECT * FROM CommandLineEventConsumer" -Namespace root\subscription  -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_clec.csv"
+    Write-Host "Capturing: WMI Hotfixes"
+    Get-WmiObject -Query "SELECT * from Win32_QuickFixEngineering" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_kbs.csv"
+    Write-Host "Capturing: WMI Installed Software"
+    Get-WmiObject -Query "SELECT Name, Vendor, Description, InstallDate, InstallDate2, Version from Win32_Product" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_software.csv"
+    Write-Host "Capturing: WMI Logical Disks"
+    Get-WmiObject -Query "SELECT * FROM Win32_LogicalDisk" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_disks.csv"
+    Write-Host "Capturing: WMI Logged-On Sessions"
+    Get-WmiObject -Query "SELECT * FROM Win32_LogonSession" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_loggedon_sessions.csv"
+    Write-Host "Capturing: WMI Logged-On Users"
+    Get-WmiObject -Query "SELECT * FROM Win32_LoggedonUser" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_loggedon_users.csv"
+    Write-Host "Capturing: WMI Net Neighbors"
+    Get-WmiObject -Query "SELECT * FROM MSFT_NetNeighbor" -Namespace root\StandardCimv2 -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_net_neighbors.csv"
+    Write-Host "Capturing: WMI TCP Connections"
+    Get-WmiObject -Query "SELECT * FROM MSFT_NetTCPConnection" -Namespace root\StandardCimv2 -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_tcp_connections.csv"
+    Write-Host "Capturing: WMI UDP Endpoints"
+    Get-WmiObject -Query "SELECT * FROM MSFT_NetUDPEndpoint" -Namespace root\StandardCimv2 -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_udp_endpoints.csv"
+    Write-Host "Capturing: WMI Process List"
+    Get-WmiObject -Query "SELECT * FROM Win32_Process" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_process_list.csv"
+    Write-Host "Capturing: WMI Scheduled Tasks"
+    Get-WmiObject -Query "SELECT * FROM MSFT_ScheduledTask" -Namespace root\Microsoft\Windows\TaskScheduler -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_scheduled_tasks.csv"
+    Write-Host "Capturing: WMI Services"
+    Get-WmiObject -Query "SELECT * FROM Win32_Service" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_services.csv"
+    Write-Host "Capturing: WMI Startup"
+    Get-WmiObject -Query "SELECT * FROM Win32_StartupCommand" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_startup.csv"
+    Write-Host "Capturing: WMI Recent Apps"
+    Get-WmiObject -Query "SELECT * FROM CCM_RecentlyUsedApps" -Namespace root\ccm\SoftwareMeteringAgent -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_recent_apps.csv"
 }
 
 function Copy-Tree {
@@ -698,7 +756,6 @@ function Copy-Tree {
             Copy-Item $_.FullName -destination $targetFile -ErrorAction SilentlyContinue | Out-Null
         }
 }
-
 
 # Below functions modified From JJ Fulmer awesome answer at https://stackoverflow.com/questions/14207788/accessing-volume-shadow-copy-vss-snapshots-from-powershell
 function New-ShadowLink {
@@ -795,9 +852,10 @@ function Main
     Gather-Cortana-DB
     Gather-WER-Data
     Gather-Crypnet-Data
-    Gather-BrowserData
-    #Gather-SuspiciousFiles
-    #Gather-USN
+    Gather-Browser-Data
+    Gather-WMI-Data
+    Gather-SuspiciousFiles
+    Gather-USN
     if ($vss) {
         Remove-ShadowLink -shadow $shadow;
     } else {}
