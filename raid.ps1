@@ -426,16 +426,11 @@ function Gather-Installed-Software
 function Gather-Amcache-Files
 {
     Write-Host "Capturing: Amcache Hive Files"
-    try{
-        try{
-            New-Item -Path ".\" -Name "$evidence_path\amcache" -ItemType "directory" | Out-Null
-        }catch{}
-        Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
-    }catch{
-        Write-Warning "Error Capturing Amcache Files"
-    }
+    New-Item -Path ".\" -Name "$evidence_path\amcache" -ItemType "directory" | Out-Null
+    Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG2" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
+
 }
 
 function Gather-Activities-Cache
@@ -516,10 +511,10 @@ function Gather-Browser-Data {
     New-Item -Path ".\" -Name "$evidence_path\browser_data\chrome" -ItemType "directory" | Out-Null
     New-Item -Path ".\" -Name "$evidence_path\browser_data\edge" -ItemType "directory" | Out-Null
     New-Item -Path ".\" -Name "$evidence_path\browser_data\brave" -ItemType "directory" | Out-Null
-    New-Item -Path ".\" -Name "$evidence_path\browser_data\edge" -ItemType "directory" | Out-Null
-    New-Item -Path ".\" -Name "$evidence_path\browser_data\chromium" -ItemType "directory" | Out-
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\chromium" -ItemType "directory" | Out-Null
     New-Item -Path ".\" -Name "$evidence_path\browser_data\opera" -ItemType "directory" | Out-Null
     New-Item -Path ".\" -Name "$evidence_path\browser_data\ie" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\firefox" -ItemType "directory" | Out-Null
 
     Write-Host "Capturing: Browser Caches"
 
@@ -751,9 +746,16 @@ function Copy-Tree {
 
     Get-ChildItem $src -filter "*" -recurse | `
         foreach{
-            $targetFile = $target + $_.FullName.SubString($src.Length);
-            New-Item -ItemType File -Path $targetFile -Force -ErrorAction SilentlyContinue | Out-Null
-            Copy-Item $_.FullName -destination $targetFile -ErrorAction SilentlyContinue | Out-Null
+            if($_.PsIsContainer)
+            {
+                $targetFile = $target + $_.FullName.SubString($src.Length);
+                New-Item -ItemType File -Path "$targetFile" -Force -ErrorAction SilentlyContinue | Out-Null
+            }else
+            {
+                $targetFile = $target + $_.FullName.SubString($src.Length);
+                New-Item -ItemType File -Path "$targetFile" -Force -ErrorAction SilentlyContinue | Out-Null
+                Copy-Item "$_.FullName" -destination "$targetFile" -ErrorAction SilentlyContinue -Force | Out-Null
+            }
         }
 }
 
