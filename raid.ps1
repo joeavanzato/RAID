@@ -2,43 +2,37 @@
 .SYNOPSIS
 
 RAID - Rapid Acquisition of Interesting Data
+
 RAID is a PowerShell script designed to add DFIR response teams in the collection of forensically useful and interesting data from potentially compromised endpoints.
 
 .DESCRIPTION
 
 RAID will execute a series of functions which will extract data, copy files, read registry key-values or otherwise export data from the system and aggregate it into a centralized location.
-Data pulled includes network configurations, ARP/DNS caches, Windows Event Logs, various Windows activity databases
 
+Data pulled includes network configurations, ARP/DNS caches, Windows Event Logs, various Windows activity databases, Scheduled Tasks and Services, Firewall Rules, NET Command output, Prefetch data, Windows Error Reporting dumps, URL Caches, BITS/Cortana/etc DBs, Browser Files, NTUSER.dat data-stores and more.
 
+Additionally, RAID will offer analysts the ability to download multiple third-party utilities and automate their use against collected data once it has been removed from the suspicious device or in-line if internet access is available.
 
-.PARAMETER InputPath
-Specifies the path to the CSV-based input file.
+.PARAMETER vss
+Specifies whether or not vssadmin will be used to allow access to locked files.
 
-.PARAMETER OutputPath
-Specifies the name and path for the CSV-based output file. By default,
-MonthlyUpdates.ps1 generates a name from the date and time it runs, and
-saves the output in the local directory.
+.PARAMETER utils
 
 .INPUTS
 
-None. You cannot pipe objects to Update-Month.ps1.
+None.
 
 .OUTPUTS
 
-None. Update-Month.ps1 does not generate any output.
+None.
 
 .EXAMPLE
 
-PS> .\Update-Month.ps1
+PS> .\raid.ps1 vss
 
 .EXAMPLE
 
-PS> .\Update-Month.ps1 -inputpath C:\Data\January.csv
-
-.EXAMPLE
-
-PS> .\Update-Month.ps1 -inputpath C:\Data\January.csv -outputPath `
-C:\Reports\2009\January.csv
+PS> .\raid.ps1 utils -path ".\evidence_hostname_example\
 
 #>
 
@@ -461,14 +455,10 @@ function Gather-BITS-DB
 {
     Write-Host "Capturing: BITS Databases"
     try{
-        try{
-            New-Item -Path ".\" -Name "$evidence_path\win_bits" -ItemType "directory" | Out-Null
-        }catch{}
-        Copy-Item -Path "$root\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
-        Copy-Item -Path "$root\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
-    }catch{
-        Write-Warning "Error Capturing BITS Databases"
-    }
+        New-Item -Path ".\" -Name "$evidence_path\win_bits" -ItemType "directory" | Out-Null
+    }catch{}
+    Copy-Item -Path "$root\ProgramData\Microsoft\Network\Downloader\qmgr*.dat" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\ProgramData\Microsoft\Network\Downloader\qmgr.db" -Destination ".\$evidence_path\win_bits" -Recurse -ErrorAction SilentlyContinue
 }
 
 function Gather-Cortana-DB
@@ -488,21 +478,9 @@ function Gather-Cortana-DB
 function Gather-WER-Data
 {
     Write-Host "Capturing: Windows Error Reporting Data"
-    try{
-        New-Item -Path ".\" -Name "$evidence_path\win_wer" -ItemType "directory" | Out-Null
-    }catch{}
-    try
-    {
-        Copy-Item -Path "$root\ProgramData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-    } catch {
-        Write-Warning "Error Copying Data from $env:SystemDrive\ProgramData\Microsoft\Windows\WER"
-    }
-    try
-    {
-        Copy-Item -Path "$root\Windows\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
-    } catch {
-        Write-Warning "Error Copying Data from $env:SystemRoot"
-    }
+    New-Item -Path ".\" -Name "$evidence_path\win_wer" -ItemType "directory" | Out-Null
+    Copy-Item -Path "$root\ProgramData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
+    Copy-Item -Path "$root\Windows\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
     Copy-Item -Path "$root\Windows\Minidump\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
     Copy-Item -Path "$root\Windows\ServiceProfiles\AppData\Local\CrashDumps\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
     Copy-Item -Path "$root\Windows\ServiceProfiles\AppData\Local\Temp\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
@@ -515,8 +493,7 @@ function Gather-WER-Data
 
 }
 
-function Gather-Crypnet-Data
-{
+function Gather-Crypnet-Data {
     Write-Host "Capturing: Windows Cryptnet URL Caches"
     try{
         try{
@@ -529,6 +506,197 @@ function Gather-Crypnet-Data
         Write-Warning "Error Capturing Windows Cryptnet URL Caches"
     }
 
+}
+
+
+function Gather-BrowserData {
+    Write-Host "Capturing: Browser Artifacts"
+
+    New-Item -Path ".\" -Name "$evidence_path\browser_data" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\chrome" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\edge" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\brave" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\edge" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\chromium" -ItemType "directory" | Out-
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\opera" -ItemType "directory" | Out-Null
+    New-Item -Path ".\" -Name "$evidence_path\browser_data\ie" -ItemType "directory" | Out-Null
+
+    Write-Host "Capturing: Browser Caches"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Cache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Media Cache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\GPUCache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Cache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Media Cache\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\GPUCache\*" -target ".\$evidence_path\browser_data\chrome"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Cache\*" -target ".\$evidence_path\browser_data\chromium"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Cache\*" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\GPUCache\*" -target ".\$evidence_path\browser_data\edge"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Cache\*" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\GPUCache\*" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Media Cache\*" -target ".\$evidence_path\browser_data\brave"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Cache\*" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\GPUCache\*" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\Opera Software\Opera Stable\*\Media Cache\*" -target ".\$evidence_path\browser_data\opera"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Cache\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\GPUCache\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Media Cache\*" -target ".\$evidence_path\browser_data\chromium"
+
+    Write-Host "Capturing: Browser Cookies"
+
+    # Chromium
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Cookies" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Cookies-journal" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Network\Cookies" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Network\Cookies-journal" -target ".\$evidence_path\browser_data\chromium"
+
+    # Chrome
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Cookies" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Cookies-journal" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Network\Cookies" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Network\Cookies-journal" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Cookies" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Cookies-journal" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Network\Cookies" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Network\Cookies-journal" -target ".\$evidence_path\browser_data\chrome"
+
+    # Edge
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Cookies" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Cookies-journal" -target ".\$evidence_path\browser_data\edge"
+
+    # IE
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Microsoft\Windows\Cookies\index.dat" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Microsoft\Windows\Cookies\Low\index.dat" -target ".\$evidence_path\browser_data\ie"
+
+    Write-Host "Capturing: Browser Extensions (Chromium)"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Extensions\*" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Extensions\*" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Extensions\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Extensions\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Extensions\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Extensions\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge Beta\User Data\*\Extensions\*" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Extensions\*" -target ".\$evidence_path\browser_data\edge"
+
+    Write-Host "Capturing: Browser Activity Databases"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Extension Activity" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Extension Activity" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Extension Activity" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Extension Activity" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Extension Activity" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Extension Activity" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge Beta\User Data\*\Extension Activity" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Extension Activity" -target ".\$evidence_path\browser_data\edge"
+
+    Write-Host "Capturing: Browser History"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Archived History" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Archived History-journal" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\History" -target ".\$evidence_path\browser_data\brave"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\History-journal" -target ".\$evidence_path\browser_data\brave"
+
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Archived History" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Archived History-journal" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\History" -target ".\$evidence_path\browser_data\opera"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\History-journal" -target ".\$evidence_path\browser_data\opera"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Archived History" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Archived History-journal" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\History" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\History-journal" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Archived History" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Archived History-journal" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\History" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\History-journal" -target ".\$evidence_path\browser_data\chromium"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Archived History" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Archived History-journal" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\History" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\History-journal" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Archived History" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Archived History-journal" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\History" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\History-journal" -target ".\$evidence_path\browser_data\chrome"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge Beta\User Data\*\Archived History" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge Beta\User Data\*\Archived History-journal" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge Beta\User Data\*\History" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge Beta\User Data\*\History-journal" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Archived History" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Archived History-journal" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\History" -target ".\$evidence_path\browser_data\edge"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\History-journal" -target ".\$evidence_path\browser_data\edge"
+
+    Write-Host "Capturing: Browser IndexedDB Files"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chromium"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chrome"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chrome"
+
+    Write-Host "Capturing: Firefox Caches"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\Cache\*" -target ".\$evidence_path\browser_data\firefox"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\cache2\*" -target ".\$evidence_path\browser_data\firefox"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\cache2\doomed\*" -target ".\$evidence_path\browser_data\firefox"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\cache2\entries\*" -target ".\$evidence_path\browser_data\firefox"
+
+    Write-Host "Capturing: Firefox History"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*\places.sqlite" -target ".\$evidence_path\browser_data\firefox"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*\places.sqlite-wal" -target ".\$evidence_path\browser_data\firefox"
+    Copy-Tree -src "$root\Users\*\AppData\Roaming\Mozilla\Firefox\Profiles\*\places.sqlite" -target ".\$evidence_path\browser_data\firefox"
+
+    Write-Host "Capturing: IE Browser Cache"
+
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\Temporary Internet Files\Content.IE5\*\*" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\Temporary Internet Files\Low\Content.IE5\*\*" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\INetCache\IE\*\*" -target ".\$evidence_path\browser_data\ie"
+    Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\INetCache\Low\*\*" -target ".\$evidence_path\browser_data\ie"
+
+
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Media Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\GPUCache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\Media Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\GPUCache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Chromium\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+    #Copy-Item -Path "$root\Users\*\AppData\Local\Chromium\User Data\*\Application Cache\Cache\*" -Destination ".\$evidence_path\browser_data\chrome" -Recurse -ErrorAction SilentlyContinue
+
+
+}
+
+function Copy-Tree {
+    Param
+    (
+         [Parameter(Mandatory=$true, Position=0)]
+         [string] $src,
+         [Parameter(Mandatory=$true, Position=1)]
+         [string] $target
+    )
+
+    Get-ChildItem $src -filter "*" -recurse | `
+        foreach{
+            $targetFile = $target + $_.FullName.SubString($src.Length);
+            New-Item -ItemType File -Path $targetFile -Force -ErrorAction SilentlyContinue | Out-Null
+            Copy-Item $_.FullName -destination $targetFile -ErrorAction SilentlyContinue | Out-Null
+        }
 }
 
 
@@ -570,7 +738,7 @@ function Remove-ShadowLink {
         $linkPath="$($ENV:SystemDrive)\$shadowcopy_name"
     )
     begin {
-        #Write-verbose "Removing shadow copy link at $linkPath"
+        Write-Host "Removing Shadow Copy Link at $linkPath"
     }
 
     process {
@@ -627,6 +795,7 @@ function Main
     Gather-Cortana-DB
     Gather-WER-Data
     Gather-Crypnet-Data
+    Gather-BrowserData
     #Gather-SuspiciousFiles
     #Gather-USN
     if ($vss) {
@@ -647,6 +816,7 @@ function Logo {
                   ███    ███
             "
     Write-Host $logo
+    Write-Host ""
     Write-Host "RAID: Rapid Acquisition of Interesting Data"
     Write-Host "github.com/joeavanzato/RAID"
     Write-Host ""
