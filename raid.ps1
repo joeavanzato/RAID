@@ -1,3 +1,46 @@
+<#
+.SYNOPSIS
+
+RAID - Rapid Acquisition of Interesting Data
+RAID is a PowerShell script designed to add DFIR response teams in the collection of forensically useful and interesting data from potentially compromised endpoints.
+
+.DESCRIPTION
+
+RAID will execute a series of functions which will extract data, copy files, read registry key-values or otherwise export data from the system and aggregate it into a centralized location.
+Data pulled includes network configurations, ARP/DNS caches, Windows Event Logs, various Windows activity databases
+
+
+
+.PARAMETER InputPath
+Specifies the path to the CSV-based input file.
+
+.PARAMETER OutputPath
+Specifies the name and path for the CSV-based output file. By default,
+MonthlyUpdates.ps1 generates a name from the date and time it runs, and
+saves the output in the local directory.
+
+.INPUTS
+
+None. You cannot pipe objects to Update-Month.ps1.
+
+.OUTPUTS
+
+None. Update-Month.ps1 does not generate any output.
+
+.EXAMPLE
+
+PS> .\Update-Month.ps1
+
+.EXAMPLE
+
+PS> .\Update-Month.ps1 -inputpath C:\Data\January.csv
+
+.EXAMPLE
+
+PS> .\Update-Month.ps1 -inputpath C:\Data\January.csv -outputPath `
+C:\Reports\2009\January.csv
+
+#>
 
 
 param(
@@ -497,6 +540,7 @@ function New-ShadowLink {
     )
 
     begin {
+        Write-Host "Creating Shadow Copy of System Drive"
         Write-Verbose "Creating a snapshot of $($ENV:SystemDrive)\"
         $class=[WMICLASS]"root\cimv2:win32_shadowcopy";
         $result = $class.create("$ENV:SystemDrive\", "ClientAccessible");
@@ -526,15 +570,15 @@ function Remove-ShadowLink {
         $linkPath="$($ENV:SystemDrive)\$shadowcopy_name"
     )
     begin {
-        Write-verbose "Removing shadow copy link at $linkPath"
+        #Write-verbose "Removing shadow copy link at $linkPath"
     }
 
     process {
-        Write-Verbose "Deleting the shadowcopy snapshot"
+        #Write-Verbose "Deleting the shadowcopy snapshot"
         Write-Host "Executing: vssadmin delete shadows /shadow=$shadowid /quiet"
         vssadmin delete shadows /shadow=$shadowid /quiet > "$evidence_path\vss_output.txt"
         #$shadow.Delete();
-        Write-Verbose "Deleting the now empty folder"
+        #Write-Verbose "Deleting the now empty folder"
         Try {
             Remove-Item -Force -Recurse $linkPath -ErrorAction Stop;
         }
@@ -544,7 +588,7 @@ function Remove-ShadowLink {
     }
 
     end {
-        Write-Verbose "Shadow link and snapshot have been removed";
+        #Write-Verbose "Shadow link and snapshot have been removed";
         return;
     }
 }
@@ -554,7 +598,7 @@ function Main
     Logo
     Create-Evidence-Dir
     if ($vss) {
-        $shadow = New-ShadowLink -Verbose
+        $shadow = New-ShadowLink
     } else {}
     Gather-EventLogs
     Gather-PowerShell-History
@@ -586,7 +630,7 @@ function Main
     #Gather-SuspiciousFiles
     #Gather-USN
     if ($vss) {
-        Remove-ShadowLink -shadow $shadow -Verbose;
+        Remove-ShadowLink -shadow $shadow;
     } else {}
 }
 
