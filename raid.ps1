@@ -296,7 +296,7 @@ function Gather-SuspiciousFiles
     try
     {
         Write-Host "Capturing: Suspicious Files [LONG]"
-        Get-ChildItem -Path C:\temp,C:\windows\system32,C:\windows\temp,C:\Users -Include *.htm,*.vbs,*.hta,*.chm,*.exe,*.bat,*.ps1,*.zip,*.gz,*.7z -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
+        Get-ChildItem -Path $root\temp,$root\windows\system32,$root\windows\temp,$root\Users,$root\programdata -Include *.htm,*.vbs,*.hta,*.chm,*.exe,*.bat,*.ps1,*.zip,*.gz,*.7z,*.vba,*.ps,*.psm1,*.docm,*.xlsm,*.pptm,*.potm,*.ppam,*.ppsm,*.sldm,*.dotm,*.xltm,*.xlam,*.lnk,*.vb,*.pdf,*.jar,*.msi,*.msp,*.gadget,*.cmd,*.vbe,*.jsp,*.scr,*.rar,*.msh,*.wsh,*.wsf,*.scf -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
     }
     catch
     {
@@ -736,8 +736,8 @@ function Gather-WMI-Data
     Get-WmiObject -Query "SELECT * FROM Win32_Service" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_services.csv"
     Write-Host "Capturing: WMI Startup"
     Get-WmiObject -Query "SELECT * FROM Win32_StartupCommand" -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_startup.csv"
-    Write-Host "Capturing: WMI Recent Apps"
-    Get-WmiObject -Query "SELECT * FROM CCM_RecentlyUsedApps" -Namespace root\ccm\SoftwareMeteringAgent -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_recent_apps.csv"
+    Write-Host "Capturing: WMI CCM Recent Apps"
+    Get-WmiObject -Query "SELECT * FROM CCM_RecentlyUsedApps" -Namespace root\ccm\SoftwareMeteringAgent -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_ccm_recent_apps.csv"
 }
 
 function Copy-Tree {
