@@ -366,7 +366,7 @@ function Gather-USN
 function Gather-AV-Data
 {
     # https://github.com/ForensicArtifacts/artifacts/blob/main/data/antivirus.yaml
-
+    Write-Host "Capturing: AV Logs/Data"
     try {
         if (Test-Path -Path ".\$evidence_path\quarantined_files") {
         } else {
@@ -435,6 +435,7 @@ function Gather-AV-Data
 function Gather-Prefetch-Files
 {
     Write-Host "Capturing: Prefetch Files"
+    Write-Log "Capturing: Prefetch Files"
     try{
         try{
             New-Item -Path ".\" -Name "$evidence_path\prefetch" -ItemType "directory" | Out-Null
@@ -442,23 +443,27 @@ function Gather-Prefetch-Files
         Copy-Item -Path "$env:SystemRoot\prefetch\*" -Destination ".\$evidence_path\prefetch" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Prefetch Files"
+        Write-Log "Error Capturing Prefetch Files"
     }
 }
 
 function Gather-PowerShell-History
 {
     Write-Host "Capturing: PowerShell History Files"
+    Write-Log "Capturing: PowerShell History Files"
     try{
         New-Item -Path ".\" -Name "$evidence_path\ps_history" -ItemType "directory" | Out-Null
         Copy-Item -Path "$env:SystemDrive\Users\*\AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt" -Destination ".\$evidence_path\ps_history" -Recurse -ErrorAction SilentlyContinue
     } catch{
         Write-Warning "Error Capturing PS History Files"
+        Write-Log "Error Capturing PS History Files"
     }
 }
 
 function Gather-Installed-Software
 {
     Write-Host "Capturing: Installed Software"
+    Write-Log "Capturing: Installed Software"
     try{
         $InstalledSoftware = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |  Select-Object DisplayName, DisplayVersion, Publisher, InstallDate
         $InstalledSoftware += Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate
@@ -466,12 +471,14 @@ function Gather-Installed-Software
     }
      catch{
         Write-Warning "Error Capturing Installed Software"
+        Write-Log "Error Capturing Installed Software"
     }
 }
 
 function Gather-Amcache-Files
 {
     Write-Host "Capturing: Amcache Hive Files"
+    Write-Log "Capturing: Amcache Hive Files"
     New-Item -Path ".\" -Name "$evidence_path\amcache" -ItemType "directory" | Out-Null
     Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
     Copy-Item -Path "$root\Windows\AppCompat\Programs\Amcache.hve.LOG1" -Destination ".\$evidence_path\amcache" -Recurse -ErrorAction SilentlyContinue
@@ -482,6 +489,7 @@ function Gather-Amcache-Files
 function Gather-Activities-Cache
 {
     Write-Host "Capturing: Activity Cache"
+    Write-Log "Capturing: Activity Cache"
     try{
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_activity_cache" -ItemType "directory" | Out-Null
@@ -489,12 +497,14 @@ function Gather-Activities-Cache
         Copy-Item -Path "$root\Users\*\AppData\Local\ConnectedDevicesPlatform\*\ActivitiesCache.db" -Destination ".\$evidence_path\win_activity_cache" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Activity Cache"
+        Write-Log "Error Capturing Activity Cache"
     }
 }
 
 function Gather-BITS-DB
 {
     Write-Host "Capturing: BITS Databases"
+    Write-Log "Capturing: BITS Databases"
     try{
         New-Item -Path ".\" -Name "$evidence_path\win_bits" -ItemType "directory" | Out-Null
     }catch{}
@@ -505,6 +515,7 @@ function Gather-BITS-DB
 function Gather-Cortana-DB
 {
     Write-Host "Capturing: Cortana Databases"
+    Write-Log "Capturing: Cortana Databases"
     try{
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_cortana" -ItemType "directory" | Out-Null
@@ -513,12 +524,14 @@ function Gather-Cortana-DB
         Copy-Item -Path "$root\Users\*\AppData\Local\Packages\Microsoft.Windows.Cortana_*\LocalState\ESEDatabase_CortanaCoreInstance\CortanaCoreDb.dat" -Destination ".\$evidence_path\win_cortana" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Cortana Databases"
+        Write-Log "Error Capturing Cortana Databases"
     }
 }
 
 function Gather-WER-Data
 {
     Write-Host "Capturing: Windows Error Reporting Data"
+    Write-Log "Capturing: Windows Error Reporting Data"
     New-Item -Path ".\" -Name "$evidence_path\win_wer" -ItemType "directory" | Out-Null
     Copy-Item -Path "$root\ProgramData\Microsoft\Windows\WER\*" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
     Copy-Item -Path "$root\Windows\*.dmp" -Destination ".\$evidence_path\win_wer" -Recurse -ErrorAction SilentlyContinue
@@ -536,6 +549,7 @@ function Gather-WER-Data
 
 function Gather-Crypnet-Data {
     Write-Host "Capturing: Windows Cryptnet URL Caches"
+    Write-Log "Capturing: Windows Cryptnet URL Caches"
     try{
         try{
             New-Item -Path ".\" -Name "$evidence_path\win_cryptnet_caches" -ItemType "directory" | Out-Null
@@ -545,6 +559,7 @@ function Gather-Crypnet-Data {
         Copy-Item -Path "$root\Users\*\AppData\LocalLow\Microsoft\CryptnetUrlCache\MetaData\*" -Destination ".\$evidence_path\win_cryptnet_caches" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Windows Cryptnet URL Caches"
+        Write-Log "Error Capturing Windows Cryptnet URL Caches"
     }
 
 }
@@ -552,6 +567,7 @@ function Gather-Crypnet-Data {
 
 function Gather-Browser-Data {
     Write-Host "Capturing: Browser Artifacts"
+    Write-Log "Capturing: Browser Artifacts"
 
     New-Item -Path ".\" -Name "$evidence_path\browser_data" -ItemType "directory" | Out-Null
     New-Item -Path ".\" -Name "$evidence_path\browser_data\chrome" -ItemType "directory" | Out-Null
@@ -563,6 +579,7 @@ function Gather-Browser-Data {
     New-Item -Path ".\" -Name "$evidence_path\browser_data\firefox" -ItemType "directory" | Out-Null
 
     Write-Host "Capturing: Browser Caches"
+    Write-Log "Capturing: Browser Caches"
 
     Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Application Cache\Cache\*" -target ".\$evidence_path\browser_data\chrome"
     Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome\User Data\*\Cache\*" -target ".\$evidence_path\browser_data\chrome"
@@ -595,6 +612,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\*\Media Cache\*" -target ".\$evidence_path\browser_data\chromium"
 
     Write-Host "Capturing: Browser Cookies"
+    Write-Log "Capturing: Browser Cookies"
 
     # Chromium
     Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\Cookies" -target ".\$evidence_path\browser_data\chromium"
@@ -621,6 +639,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Microsoft\Windows\Cookies\Low\index.dat" -target ".\$evidence_path\browser_data\ie"
 
     Write-Host "Capturing: Browser Extensions (Chromium)"
+    Write-Log "Capturing: Browser Extensions (Chromium)"
 
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Extensions\*" -target ".\$evidence_path\browser_data\opera"
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Extensions\*" -target ".\$evidence_path\browser_data\brave"
@@ -632,6 +651,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Extensions\*" -target ".\$evidence_path\browser_data\edge"
 
     Write-Host "Capturing: Browser Activity Databases"
+    Write-Log "Capturing: Browser Activity Databases"
 
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Extension Activity" -target ".\$evidence_path\browser_data\brave"
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Opera Software\Opera Stable\*\Extension Activity" -target ".\$evidence_path\browser_data\opera"
@@ -643,6 +663,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\Extension Activity" -target ".\$evidence_path\browser_data\edge"
 
     Write-Host "Capturing: Browser History"
+    Write-Log "Capturing: Browser History"
 
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Archived History" -target ".\$evidence_path\browser_data\brave"
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Brave\*\Archived History-journal" -target ".\$evidence_path\browser_data\brave"
@@ -682,6 +703,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\History-journal" -target ".\$evidence_path\browser_data\edge"
 
     Write-Host "Capturing: Browser IndexedDB Files"
+    Write-Log "Capturing: Browser IndexedDB Files"
 
     Copy-Tree -src "$root\Users\*\AppData\Local\Chromium\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chromium"
     Copy-Tree -src "$root\Users\*\AppData\Local\Google\Chrome SxS\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chrome"
@@ -689,6 +711,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Edge\User Data\*\IndexedDB\*" -target ".\$evidence_path\browser_data\chrome"
 
     Write-Host "Capturing: Firefox Caches"
+    Write-Log "Capturing: Firefox Caches"
 
     Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\Cache\*" -target ".\$evidence_path\browser_data\firefox"
     Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\cache2\*" -target ".\$evidence_path\browser_data\firefox"
@@ -696,12 +719,14 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*.default\cache2\entries\*" -target ".\$evidence_path\browser_data\firefox"
 
     Write-Host "Capturing: Firefox History"
+    Write-Log "Capturing: Firefox History"
 
     Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*\places.sqlite" -target ".\$evidence_path\browser_data\firefox"
     Copy-Tree -src "$root\Users\*\AppData\Local\Mozilla\Firefox\Profiles\*\places.sqlite-wal" -target ".\$evidence_path\browser_data\firefox"
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Mozilla\Firefox\Profiles\*\places.sqlite" -target ".\$evidence_path\browser_data\firefox"
 
     Write-Host "Capturing: IE Browser Cache"
+    Write-Log "Capturing: IE Browser Cache"
 
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\Temporary Internet Files\Content.IE5\*\*" -target ".\$evidence_path\browser_data\ie"
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\Temporary Internet Files\Low\Content.IE5\*\*" -target ".\$evidence_path\browser_data\ie"
@@ -709,6 +734,7 @@ function Gather-Browser-Data {
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Windows\INetCache\Low\*\*" -target ".\$evidence_path\browser_data\ie"
 
     Write-Host "Capturing: IE Browser History"
+    Write-Log "Capturing: IE Browser History"
 
     Copy-Tree -src "$root\Users\*\AppData\Roaming\Microsoft\Windows\IEDownloadHistory\index.dat" -target ".\$evidence_path\browser_data\ie"
     Copy-Tree -src "$root\Users\*\AppData\Local\Microsoft\Feeds Cache\index.dat" -target ".\$evidence_path\browser_data\ie"
