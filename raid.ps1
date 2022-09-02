@@ -735,6 +735,11 @@ function Gather-WMI-Data
     Get-WmiObject -Query "SELECT * FROM CCM_RecentlyUsedApps" -Namespace root\ccm\SoftwareMeteringAgent -ErrorAction SilentlyContinue | Select-Object * | Export-CSV -NoTypeInformation -Path "$evidence_path\win_wmi\wmi_ccm_recent_apps.csv"
 }
 
+function Gather-Recycle-Bin
+{
+
+}
+
 function Copy-Tree {
     Param
     (
