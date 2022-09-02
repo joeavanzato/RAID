@@ -64,6 +64,7 @@ $datetime = Get-Date -Format "MM_dd_yyyy_HH_mm"
 $evidence_path = "Evidence_triage_$env:computername"+"$datetime"
 $shadowcopy_name = "shadowcopy"
 $shadow_root = $env:systemdrive+"\"+$shadowcopy_name
+$LogFile = "$evidence_path\log.txt"
 
 function Create-Evidence-Dir
 {
@@ -72,6 +73,7 @@ function Create-Evidence-Dir
         if (Test-Path -Path "$evidence_path") {
         } else {
             New-Item -Path ".\" -Name "$evidence_path" -ItemType "directory"  | Out-Null
+            Write-Log "Evidence Directory Created Successfully"
         }
         }
     catch{
@@ -83,9 +85,11 @@ function Gather-TCPConnections
 {
     try{
         Write-Host "Capturing: TCP Connections"
+        Write-Log "Capturing: TCP Connections"
         Get-NetTcpConnection -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\network_connections.csv
     }catch{
         Write-Warning "Error Capturing TCP Connections"
+        Write-Log "Error Capturing TCP Connections"
     }
 }
 
@@ -93,9 +97,11 @@ function Gather-Services
 {
     try{
         Write-Host "Capturing: Windows Services"
+        Write-Log "Capturing: Windows Services"
         Get-WmiObject win32_service -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\windows_services.csv
     }catch{
         Write-Warning "Error Capturing Windows Services"
+        Write-Log "Error Capturing Windows Services"
     }
 }
 
@@ -103,9 +109,11 @@ function Gather-Processes
 {
     try{
         Write-Host "Capturing: Running Processes"
+        Write-Log "Capturing: Running Processes"
         Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path .\$evidence_path\running_processes.csv
     }catch{
         Write-Warning "Error Capturing Running Processes"
+        Write-Log "Error Capturing Running Processes"
     }
 }
 
@@ -113,9 +121,11 @@ function Gather-DNS
 {
     try{
         Write-Host "Capturing: DNS Cache"
+        Write-Log "Capturing: DNS Cache"
         Get-DnsClientCache -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\dns_cache.csv
     }catch{
         Write-Warning "Error Capturing DNS Cache"
+        Write-Log "Error Capturing DNS Cache"
     }
 }
 
@@ -123,9 +133,11 @@ function Gather-SMB
 {
     try{
         Write-Host "Capturing: SMB Shares"
+        Write-Log "Capturing: SMB Shares"
         Get-SmbShare -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\smb_shares.csv
     }catch{
         Write-Warning "Error Capturing SMB Shares"
+        Write-Log "Error Capturing SMB Shares"
     }
 }
 
@@ -133,9 +145,11 @@ function Gather-Tasks
 {
     try{
         Write-Host "Capturing: Windows Scheduled Tasks"
+        Write-Log "Capturing: Windows Scheduled Tasks"
         Get-ScheduledTask -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\scheduled_tasks.csv
     }catch{
         Write-Warning "Error Capturing Windows Scheduled Tasks"
+        Write-Log "Error Capturing Windows Scheduled Tasks"
     }
 }
 
@@ -143,9 +157,11 @@ function Gather-Defender-Detections
 {
     try{
         Write-Host "Capturing: Windows Defender Detections"
+        Write-Log "Capturing: Windows Defender Detections"
         Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object * | Export-Csv -NoTypeInformation -Path .\$evidence_path\defender_threats.csv
     }catch{
         Write-Warning "Error Capturing Windows Defender Detections"
+        Write-Log "Error Capturing Windows Defender Detections"
     }
 }
 
@@ -153,12 +169,14 @@ function Gather-EventLogs
 {
     try{
         Write-Host "Capturing: Windows Event Logs"
+        Write-Log "Capturing: Windows Event Logs"
         try{
             New-Item -Path ".\" -Name "$evidence_path\eventlogs" -ItemType "directory" | Out-Null
         }catch{}
     Copy-Item -Path "$env:SystemRoot\System32\winevt\logs\*" -Destination ".\$evidence_path\eventlogs" -Recurse -ErrorAction SilentlyContinue
     }catch{
         Write-Warning "Error Capturing Windows Event Logs"
+        Write-Log "Error Capturing Windows Event Logs"
     }
 }
 
@@ -166,9 +184,11 @@ function Gather-NetConfig
 {
     try{
         Write-Host "Capturing: Network Configuration"
+        Write-Log "Capturing: Network Configuration"
         ipconfig /all > $evidence_path\ipconfig.txt
     }catch{
         Write-Warning "Error Capturing Network Configuration"
+        Write-Log "Error Capturing Network Configuration"
     }
 }
 
@@ -176,9 +196,11 @@ function Gather-PatchInfo
 {
     try{
         Write-Host "Capturing: Patch Information"
+        Write-Log "Capturing: Patch Information"
         wmic qfe list full > $evidence_path\patches.txt
     }catch{
         Write-Warning "Error Capturing Patch Information"
+        Write-Log "Error Capturing Patch Information"
     }
 }
 
@@ -186,11 +208,13 @@ function Gather-QData
 {
     try{
         Write-Host "Capturing: Remote Sessions/Processes"
+        Write-Log "Capturing: Remote Sessions/Processes"
         qwinsta >> $evidence_path\qwinsta.txt
         quser >> $evidence_path\quser.txt
         qprocess >> $evidence_path\qprocess.txt
     }catch{
         Write-Warning "Error Capturing Remote Sessions/Processes"
+        Write-Log "Error Capturing Remote Sessions/Processes"
     }
 }
 
@@ -198,9 +222,11 @@ function Gather-LocalAdmins
 {
     try{
         Write-Host "Capturing: Local Admins"
+        Write-Log "Capturing: Local Admins"
         net localgroup administrators > $evidence_path\local_admins.txt
     }catch{
         Write-Warning "Error Capturing Local Admins"
+        Write-Log "Error Capturing Local Admins"
     }
 }
 
@@ -208,11 +234,13 @@ function Gather-StartupItems
 {
     try{
         Write-Host "Capturing: Startup Items"
+        Write-Log "Capturing: Startup Items"
         net start > $evidence_path\startup_items.txt
         "WMIC STARTUP ITEMS" >> $evidence_path\startup_items.txt
         wmic startup get * /format:list >> $evidence_path\startup_items.txt
     }catch{
         Write-Warning "Error Capturing Startup Items"
+        Write-Log "Error Capturing Startup Items"
     }
 }
 
@@ -220,9 +248,11 @@ function Gather-SysInfo
 {
     try{
         Write-Host "Capturing: System Information"
+        Write-Log "Capturing: System Information"
         systeminfo > $evidence_path\systeminfo.txt
     }catch{
         Write-Warning "Error Capturing System Information"
+        Write-Log "Error Capturing System Information"
     }
 }
 
@@ -230,9 +260,11 @@ function Gather-FirewallRules
 {
     try {
         Write-Host "Capturing: Firewall Rules"
+        Write-Log "Capturing: Firewall Rules"
         Get-NetFirewallRule -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\firewall_rules.csv
     } catch{
         Write-Warning "Error Capturing Firewall Rules"
+        Write-Log "Error Capturing Firewall Rules"
     }
 }
 
@@ -240,9 +272,11 @@ function Gather-ARP
 {
     try {
         Write-Host "Capturing: ARP Cache"
+        Write-Log "Capturing: ARP Cache"
         Get-NetNeighbor -ErrorAction SilentlyContinue | Select * | Export-Csv -NoTypeInformation -Path  $evidence_path\arp_cache.csv
     } catch{
         Write-Warning "Error Capturing ARP Cache"
+        Write-Log "Error Capturing ARP Cache"
     }
 }
 
@@ -251,41 +285,49 @@ function Gather-NetCommands
     Write-Host "Capturing: Net Commands"
     try {
         Write-Host "Capturing: Net Session"
+        Write-Log "Capturing: Net Session"
         Invoke-Expression "cmd.exe /c net session >> $evidence_path\net_session.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net Use"
+        Write-Log "Capturing: Net Use"
         Invoke-Expression "cmd.exe /c net use >> $evidence_path\net_use.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net User"
+        Write-Log "Capturing: Net User"
         Invoke-Expression "cmd.exe /c net user >> $evidence_path\net_user.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net View"
+        Write-Log "Capturing: Net View"
         Invoke-Expression "cmd.exe /c net view >> $evidence_path\net_view.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net Share"
+        Write-Log "Capturing: Net Share"
         Invoke-Expression "cmd.exe /c net share >> $evidence_path\net_share.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net File"
+        Write-Log "Capturing: Net File"
         Invoke-Expression "cmd.exe /c net file >> $evidence_path\net_file.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net Accounts"
+        Write-Log "Capturing: Net Accounts"
         Invoke-Expression "cmd.exe /c net accounts >> $evidence_path\net_accounts.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
     try {
         Write-Host "Capturing: Net Localgroup"
+        Write-Log "Capturing: Net Localgroup"
         Invoke-Expression "cmd.exe /c net localgroup >> $evidence_path\net_localgroup.txt" -ErrorAction SilentlyContinue | Out-Null
     }
     catch { }
@@ -296,11 +338,13 @@ function Gather-SuspiciousFiles
     try
     {
         Write-Host "Capturing: Suspicious Files [LONG]"
+        Write-Log "Capturing: Suspicious Files [LONG]"
         Get-ChildItem -Path $root\temp,$root\windows\system32,$root\windows\temp,$root\Users,$root\programdata -Include *.htm,*.vbs,*.hta,*.chm,*.exe,*.bat,*.ps1,*.zip,*.gz,*.7z,*.vba,*.ps,*.psm1,*.docm,*.xlsm,*.pptm,*.potm,*.ppam,*.ppsm,*.sldm,*.dotm,*.xltm,*.xlam,*.lnk,*.vb,*.pdf,*.jar,*.msi,*.msp,*.gadget,*.cmd,*.vbe,*.jsp,*.scr,*.rar,*.msh,*.wsh,*.wsf,*.scf -File -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-15) } | Select-Object PSPath, PSParentPath, PSChildName, PSDrive, PSProvider, PSIsContainer, Mode, LinkType, Name, Length, DirectoryName, Directory, IsReadOnly, Exists, FullName, Extension, CreationTime, CreationTimeUtc, LastAccessTime, LastAccessTimeUtc, LastWriteTime, LastWriteTimeUtc | Export-Csv -NoTypeInformation -Path  $evidence_path\suspicious_files.csv
     }
     catch
     {
         Write-Warning "Error Capturing Suspicious Files"
+        Write-Log "Error Capturing Suspicious Files"
     }
 }
 
@@ -309,11 +353,13 @@ function Gather-USN
     try
     {
         Write-Host "Capturing: USN Journal [LONG]"
+        Write-Log "Capturing: USN Journal [LONG]"
         fsutil usn readjournal C: csv > .\$evidence_path\usn_journal.csv
     }
     catch
     {
         Write-Warning "Error Capturing USN Journal"
+        Write-Log "Error Capturing USN Journal"
     }
 }
 
@@ -737,10 +783,98 @@ function Gather-WMI-Data
 
 function Gather-Recycle-Bin
 {
+    try
+    {
+        Write-Host "Capturing: Recycle Bin Information"
+        Write-Log "Capturing: Recycle Bin Information"
+        $shell = New-Object -com shell.application
+        $rb = $shell.Namespace(10)
+        $bin = $rb.items() | Parse-RecycleBin-Item | Export-CSV -NoTypeInformation -Path "$evidence_path\win_recyclebin.csv"
+    } catch {
+        Write-Warning "Error Capturing Recycle Bin Information"
+        Write-Log "Error Capturing Recycle Bin Information"
+    }
 
 }
 
+# Courtesy of https://jdhitsolutions.com/blog/powershell/7024/managing-the-recycle-bin-with-powershell/
+Function Parse-RecycleBin-Item {
+    [cmdletbinding()]
+    Param(
+        [Parameter(Mandatory, ValueFromPipeline)]
+        [object]$Item
+    )
+    #this function relies variables set in a parent scope
+    Process {
+        Write-Verbose "[$((Get-Date).TimeofDay) PROCESS] Processing $($item.path)"
+
+        # uncomment for troubleshooting
+        # $global:raw += $item
+        if ($item.IsFolder -AND ($item.type -notmatch "ZIP")) {
+            Write-Verbose "Enumerating $($item.name)"
+            Try {
+                #track the path name through each child object
+                if ($fldpath) {
+                    $fldpath = Join-Path -Path $fldPath -ChildPath $item.GetFolder.Title
+                }
+                else {
+                    $fldPath = $item.GetFolder.Title
+                }
+                #recurse through child items
+                $item.GetFolder().Items() | Parse-RecycleBin-Item
+                Remove-Variable -Name fldpath
+            }
+            Catch {
+               # Uncomment for troubleshooting
+               # $global:rbwarn += $item
+                Write-Warning ($item | Out-String)
+                Write-Warning $_.exception.message
+            }
+        }
+        else {
+            #sometimes the original location is stored in an extended property
+            $data = $item.ExtendedProperty("infotip").split("`n") | Where-Object { $_ -match "Original location" }
+            if ($data) {
+                $origPath = $data.split(":", 2)[1].trim()
+                $full = Join-Path -path $origPath -ChildPath $item.name -ErrorAction stop
+                Remove-Variable -Name data
+            }
+            else {
+                #no extended property so use this code to attemp to rebuild the original location
+                if ($item.parent.title -match "^[C-Zc-z]:\\") {
+                    $origPath = $item.parent.title
+                }
+                elseif ($fldpath) {
+                    $origPath = $fldPath
+                }
+                else {
+                    $test = $item.parent
+                    Write-Host "searching for parent on $($test.self.path)" -ForegroundColor cyan
+                    do { $test = $test.parentfolder; $save = $test.title } until ($test.title -match "^[C-Zc-z]:\\" -OR $test.title -eq $save)
+                    $origPath = $test.title
+                }
+
+                $full = Join-Path -path $origPath -ChildPath $item.name -ErrorAction stop
+            }
+
+            [pscustomobject]@{
+                PSTypename       = "DeletedItem"
+                Name             = $item.name
+                Path             = $item.Path
+                Modified         = $item.ModifyDate
+                OriginalPath     = $origPath
+                OriginalFullName = $full
+                Size             = $item.Size
+                IsFolder         = $item.IsFolder
+                Type             = $item.Type
+            }
+        }
+    } #process
+}
+
 function Copy-Tree {
+    # This is not perfect because tree structure is not appropriately maintained.  Other solutions did not work cleanly.
+    # Will revisit to implement copying full paths as directory names to at least preserve them
     Param
     (
          [Parameter(Mandatory=$true, Position=0)]
@@ -753,15 +887,26 @@ function Copy-Tree {
         foreach{
             if($_.PsIsContainer)
             {
+                Write-Log "Creating Directory: $targetFile"
                 $targetFile = $target + $_.FullName.SubString($src.Length);
                 New-Item -ItemType File -Path "$targetFile" -Force -ErrorAction SilentlyContinue | Out-Null
             }else
             {
+                $temp = $_.FullName
+                Write-Log "Copying: $temp to $targetFile"
                 $targetFile = $target + $_.FullName.SubString($src.Length);
                 New-Item -ItemType File -Path "$targetFile" -Force -ErrorAction SilentlyContinue | Out-Null
                 Copy-Item "$_.FullName" -destination "$targetFile" -ErrorAction SilentlyContinue -Force | Out-Null
             }
         }
+}
+
+function Write-Log
+{
+    Param ([string]$message)
+    $Stamp = (Get-Date).toString("yyyy/MM/dd HH:mm:ss")
+    $LogMessage = "$Stamp $message"
+    Add-content $LogFile -value $LogMessage
 }
 
 # Below functions modified From JJ Fulmer awesome answer at https://stackoverflow.com/questions/14207788/accessing-volume-shadow-copy-vss-snapshots-from-powershell
@@ -863,6 +1008,7 @@ function Main
     Gather-WMI-Data
     Gather-SuspiciousFiles
     Gather-USN
+    Gather-Recycle-Bin
     if ($vss) {
         Remove-ShadowLink -shadow $shadow;
     } else {}
